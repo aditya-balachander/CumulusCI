@@ -1,6 +1,6 @@
 from cumulusci.core.utils import process_list_arg
 from cumulusci.salesforce_api.metadata import ApiRetrieveUnpackaged
-from cumulusci.salesforce_api.tooling_retrieve import ToolingApiTask
+from cumulusci.salesforce_api.retrieve_profile_api import RetrieveProfileApi
 from cumulusci.tasks.salesforce.BaseSalesforceMetadataApiTask import (
     BaseSalesforceMetadataApiTask,
 )
@@ -9,6 +9,7 @@ EXTRACT_DIR = "./unpackaged"
 
 
 class RetrieveProfile(BaseSalesforceMetadataApiTask):
+    api_version = "58.0"
     api_class = ApiRetrieveUnpackaged
     task_options = {
         "profiles": {
@@ -23,7 +24,7 @@ class RetrieveProfile(BaseSalesforceMetadataApiTask):
     def _run_task(self):
 
         self.profiles = process_list_arg(self.options["profiles"])
-        self.tooling_task = ToolingApiTask(
+        self.tooling_task = RetrieveProfileApi(
             project_config=self.project_config,
             task_config=self.task_config,
             org_config=self.org_config,
@@ -45,17 +46,17 @@ class RetrieveProfile(BaseSalesforceMetadataApiTask):
         #         zip_result.extract(file_info, EXTRACT_DIR)
         zip_result.extractall("./unpackaged")
         self.logger.info(
-            f"Profiles '{self.profiles}' unzipped into folder 'unpackaged'"
+            f"Profiles {', '.join(self.profiles)} unzipped into folder 'unpackaged'"
         )
 
     def _get_api(self):
         return self.api_class(
             self,
-            api_version=self.org_config.latest_api_version,
+            api_version=self.api_version,
             package_xml=self.package_xml,
         )
 
-    def _create_package_xml(self, input_dict: dict, api_version="58.0"):
+    def _create_package_xml(self, input_dict: dict, api_version=api_version):
         package_xml = '<?xml version="1.0" encoding="UTF-8"?>\n'
         package_xml += '<Package xmlns="http://soap.sforce.com/2006/04/metadata">\n'
 

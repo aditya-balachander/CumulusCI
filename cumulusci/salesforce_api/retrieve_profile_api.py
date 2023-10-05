@@ -80,10 +80,10 @@ CUSTOM_TAB_TYPE = "CustomTab"
 CUSTOM_TAB_QUERY_NAME = "customTab"
 
 
-class ToolingApiTask(BaseSalesforceApiTask):
+class RetrieveProfileApi(BaseSalesforceApiTask):
     def _init_task(self):
         self.api_version = "58.0"
-        super(ToolingApiTask, self)._init_task()
+        super(RetrieveProfileApi, self)._init_task()
 
     def _run_queries_in_parallel(self, queries: Dict[str, str]) -> Dict[str, list]:
         num_threads = 4
