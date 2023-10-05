@@ -7,17 +7,61 @@ from simple_salesforce.exceptions import SalesforceGeneralError
 
 from cumulusci.tasks.salesforce.BaseSalesforceApiTask import BaseSalesforceApiTask
 
+
+class MetadataInfo:
+    def __init__(
+        self, columns: List[str], table_name: str, package_xml_name: str, id_field: str
+    ):
+        self.columns = columns
+        self.table_name = table_name
+        self.package_xml_name = package_xml_name
+        self.id_field = id_field
+
+
+APEXCLASS = MetadataInfo(
+    columns=["Name", "NamespacePrefix"],
+    table_name="ApexClass",
+    package_xml_name="ApexClass",
+    id_field="Id",
+)
+APEXPAGE = MetadataInfo(
+    columns=["Name", "NamespacePrefix"],
+    table_name="ApexPage",
+    package_xml_name="ApexPage",
+    id_field="Id",
+)
+CUSTOMPERMISSION = MetadataInfo(
+    columns=["DeveloperName", "NamespacePrefix"],
+    table_name="CustomPermission",
+    package_xml_name="CustomPermission",
+    id_field="Id",
+)
+TABSET = MetadataInfo(
+    columns=["Name", "NamespacePrefix"],
+    table_name="AppMenuItem",
+    package_xml_name="CustomApplication",
+    id_field="ApplicationId",
+)
+CONNECTEDAPPLICATION = MetadataInfo(
+    columns=["Name", "NamespacePrefix"],
+    table_name="AppMenuItem",
+    package_xml_name="CustomApplication",
+    id_field="ApplicationId",
+)
+EXTERNALDATASOURCE = MetadataInfo(
+    columns=["DeveloperName", "NamespacePrefix"],
+    table_name="ExternalDataSource",
+    package_xml_name="ExternalDataSource",
+    id_field="Id",
+)
+
 SETUP_ENTITY_TYPES = {
-    "ApexClass": {"columns": ["Name", "NamespacePrefix"], "table_name": "ApexClass"},
-    "ApexPage": {"columns": ["Name", "NamespacePrefix"], "table_name": "ApexPage"},
-    "CustomPermission": {
-        "columns": ["DeveloperName", "NamespacePrefix"],
-        "table_name": "CustomPermission",
-    },
-    "ExternalDataSource": {
-        "columns": ["DeveloperName", "NamespacePrefix"],
-        "table_name": "ExternalDataSource",
-    },
+    "ApexClass": APEXCLASS,
+    "ApexPage": APEXPAGE,
+    "CustomPermission": CUSTOMPERMISSION,
+    "TabSet": TABSET,
+    "ConnectedApplication": CONNECTEDAPPLICATION,
+    "ExternalDataSource": EXTERNALDATASOURCE,
 }
 SETUP_ENTITY_QUERY_NAME = "setupEntityAccess"
 
@@ -165,9 +209,9 @@ class ToolingApiTask(BaseSalesforceApiTask):
         for entity_type, query_values in SETUP_ENTITY_TYPES.items():
             if query_values and len(setupEntityAccess_dict[entity_type]) != 0:
                 queries[entity_type] = self._build_query(
-                    query_values["columns"],
-                    query_values["table_name"],
-                    {"Id": setupEntityAccess_dict[entity_type]},
+                    query_values.columns,
+                    query_values.table_name,
+                    {query_values.id_field: setupEntityAccess_dict[entity_type]},
                 )
 
         result = self._run_queries_in_parallel(queries)
@@ -175,17 +219,19 @@ class ToolingApiTask(BaseSalesforceApiTask):
         extracted_values = {}
         for entity_type, data in SETUP_ENTITY_TYPES.items():
             if entity_type in result and data:
-                extracted_values[entity_type] = []
+                extracted_values.setdefault(data.package_xml_name, [])
                 for item in result[entity_type]:
                     if (
                         "NamespacePrefix" in item
                         and item["NamespacePrefix"] is not None
                     ):
-                        extracted_values[entity_type].append(
-                            f'{item["NamespacePrefix"]}__{item[data["columns"][0]]}'
+                        extracted_values[data.package_xml_name].append(
+                            f'{item["NamespacePrefix"]}__{item[data.columns[0]]}'
                         )
                     else:
-                        extracted_values[entity_type].append(item[data["columns"][0]])
+                        extracted_values[data.package_xml_name].append(
+                            item[data.columns[0]]
+                        )
 
         return extracted_values
 
