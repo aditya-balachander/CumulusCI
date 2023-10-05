@@ -54,6 +54,12 @@ EXTERNALDATASOURCE = MetadataInfo(
     package_xml_name="ExternalDataSource",
     id_field="Id",
 )
+FLOWDEFINITION = MetadataInfo(
+    columns=["ApiName"],
+    table_name="FlowDefinitionView",
+    package_xml_name="Flow",
+    id_field="Id",
+)
 
 SETUP_ENTITY_TYPES = {
     "ApexClass": APEXCLASS,
@@ -62,6 +68,7 @@ SETUP_ENTITY_TYPES = {
     "TabSet": TABSET,
     "ConnectedApplication": CONNECTEDAPPLICATION,
     "ExternalDataSource": EXTERNALDATASOURCE,
+    "FlowDefinition": FLOWDEFINITION,
 }
 SETUP_ENTITY_QUERY_NAME = "setupEntityAccess"
 
@@ -74,6 +81,7 @@ CUSTOM_TAB_QUERY_NAME = "customTab"
 
 class ToolingApiTask(BaseSalesforceApiTask):
     def _init_task(self):
+        self.api_version = "58.0"
         super(ToolingApiTask, self)._init_task()
 
     def _run_queries_in_parallel(self, queries: Dict[str, str]) -> Dict[str, list]:
