@@ -2,6 +2,7 @@ import json
 from concurrent.futures import ThreadPoolExecutor
 from typing import Dict, List, Union
 
+from requests.exceptions import ConnectionError
 from salesforce_bulk.util import IteratorBytesIO
 from simple_salesforce.exceptions import SalesforceGeneralError
 
@@ -108,7 +109,7 @@ class ToolingApiTask(BaseSalesforceApiTask):
     def _run_query(self, query):
         try:
             result = self.sf.query(query)
-        except SalesforceGeneralError:
+        except (SalesforceGeneralError, ConnectionError):
             result = self._run_bulk_query(query)
         return result
 

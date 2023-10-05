@@ -1,3 +1,4 @@
+from cumulusci.core.utils import process_list_arg
 from cumulusci.salesforce_api.metadata import ApiRetrieveUnpackaged
 from cumulusci.salesforce_api.tooling_retrieve import ToolingApiTask
 from cumulusci.tasks.salesforce.BaseSalesforceMetadataApiTask import (
@@ -10,8 +11,8 @@ EXTRACT_DIR = "./unpackaged"
 class RetrieveProfile(BaseSalesforceMetadataApiTask):
     api_class = ApiRetrieveUnpackaged
     task_options = {
-        "name": {
-            "description": "The name of the the new profile",
+        "profiles": {
+            "description": "List of profiles that you want to retrieve",
             "required": True,
         },
     }
@@ -21,7 +22,7 @@ class RetrieveProfile(BaseSalesforceMetadataApiTask):
 
     def _run_task(self):
 
-        self.name = self.options["name"]
+        self.profiles = process_list_arg(self.options["profiles"])
         self.tooling_task = ToolingApiTask(
             project_config=self.project_config,
             task_config=self.task_config,
@@ -29,26 +30,23 @@ class RetrieveProfile(BaseSalesforceMetadataApiTask):
         )
         self.tooling_task._init_task()
         permissionable_entities = self.tooling_task._retrieve_permissionable_entities(
-            [
-                self.name,
-            ]
+            self.profiles
         )
         entities_to_be_retrieved = {
             **permissionable_entities,
-            **{
-                "Profile": [
-                    self.name,
-                ]
-            },
+            **{"Profile": self.profiles},
         }
 
         self.package_xml = self._create_package_xml(entities_to_be_retrieved)
         api = self._get_api()
         zip_result = api()
-        for file_info in zip_result.infolist():
-            if file_info.filename.startswith("profiles/"):
-                zip_result.extract(file_info, EXTRACT_DIR)
-        self.logger.info(f"Profile '{self.name}' unzipped into folder 'unpackaged'")
+        # for file_info in zip_result.infolist():
+        #     if file_info.filename.startswith("profiles/"):
+        #         zip_result.extract(file_info, EXTRACT_DIR)
+        zip_result.extractall("./unpackaged")
+        self.logger.info(
+            f"Profiles '{self.profiles}' unzipped into folder 'unpackaged'"
+        )
 
     def _get_api(self):
         return self.api_class(
