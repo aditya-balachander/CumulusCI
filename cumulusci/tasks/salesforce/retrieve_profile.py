@@ -11,6 +11,7 @@ EXTRACT_DIR = "./unpackaged"
 class RetrieveProfile(BaseSalesforceMetadataApiTask):
     api_version = "58.0"
     api_class = ApiRetrieveUnpackaged
+    extract_dir = EXTRACT_DIR
     task_options = {
         "profiles": {
             "description": "List of profiles that you want to retrieve",
@@ -24,14 +25,16 @@ class RetrieveProfile(BaseSalesforceMetadataApiTask):
     def _run_task(self):
 
         self.profiles = process_list_arg(self.options["profiles"])
-        self.tooling_task = RetrieveProfileApi(
+        self.retrieve_profile_api_task = RetrieveProfileApi(
             project_config=self.project_config,
             task_config=self.task_config,
             org_config=self.org_config,
         )
-        self.tooling_task._init_task()
-        permissionable_entities = self.tooling_task._retrieve_permissionable_entities(
-            self.profiles
+        self.retrieve_profile_api_task._init_task()
+        permissionable_entities = (
+            self.retrieve_profile_api_task._retrieve_permissionable_entities(
+                self.profiles
+            )
         )
         entities_to_be_retrieved = {
             **permissionable_entities,
@@ -41,10 +44,15 @@ class RetrieveProfile(BaseSalesforceMetadataApiTask):
         self.package_xml = self._create_package_xml(entities_to_be_retrieved)
         api = self._get_api()
         zip_result = api()
-        # for file_info in zip_result.infolist():
-        #     if file_info.filename.startswith("profiles/"):
-        #         zip_result.extract(file_info, EXTRACT_DIR)
-        zip_result.extractall("./unpackaged")
+
+        # Comment the below lines if extracting all dependencies
+        for file_info in zip_result.infolist():
+            if file_info.filename.startswith("profiles/"):
+                zip_result.extract(file_info, self.extract_dir)
+
+        # If you wanna extract all dependencies, uncomment the below line
+        # zip_result.extractall(self.extract_dir)
+
         self.logger.info(
             f"Profiles {', '.join(self.profiles)} unzipped into folder 'unpackaged'"
         )

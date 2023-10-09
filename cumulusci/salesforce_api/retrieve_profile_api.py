@@ -2,8 +2,8 @@ import json
 from concurrent.futures import ThreadPoolExecutor
 from typing import Dict, List, Union
 
+import salesforce_bulk
 from requests.exceptions import ConnectionError
-from salesforce_bulk.util import IteratorBytesIO
 from simple_salesforce.exceptions import SalesforceGeneralError
 
 from cumulusci.tasks.salesforce.BaseSalesforceApiTask import BaseSalesforceApiTask
@@ -122,7 +122,7 @@ class RetrieveProfileApi(BaseSalesforceApiTask):
         self.bulk.close_job(job)
         results = self.bulk.get_all_results_for_query_batch(batch)
         for result in results:
-            result = json.load(IteratorBytesIO(result))
+            result = json.load(salesforce_bulk.util.IteratorBytesIO(result))
             return {"records": result}
 
     def _extract_table_name_from_query(self, query):
@@ -159,7 +159,7 @@ class RetrieveProfileApi(BaseSalesforceApiTask):
                 where_list.append(condition)
             where_clause = "WHERE " + " AND ".join(where_list)
 
-        query = f"SELECT {select_clause} FROM {table_name} {where_clause}"
+        query = f"SELECT {select_clause} FROM {table_name} {where_clause}".strip()
         return query
 
     # Retrieve all the permissionable entitites for a set of profiles
